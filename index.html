@@ -1,0 +1,3682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BudgetFlow - Smart Budget Planner</title>
+    <meta name="description" content="BudgetFlow is a smart, simple budgeting web app for students, parents, freelancers, and business owners. Track expenses, plan budgets, and analyze finances easily.">
+<meta name="author" content="Pordi Chan">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flag-icons/6.6.6/css/flag-icons.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Reset and Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #16a34a;
+            --primary-hover: #15803d;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-color: #1e293b;
+            --text-secondary: #64748b;
+            --border-radius: 16px;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --transition: all 0.3s ease;
+            --danger-color: #ef4444;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-color: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.5;
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        /* Container and Layout */
+        .container {
+            max-width: 100%;
+            min-height: 100vh;
+            padding: 0;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        /* Header */
+        .header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: var(--bg-color);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        [data-theme="dark"] .header {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--primary-color);
+            cursor: pointer;
+        }
+
+        .logo i {
+            font-size: 24px;
+        }
+
+        .compact-balance {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(22, 163, 74, 0.1);
+            padding: 8px 16px;
+            border-radius: 50px;
+            border: 2px solid var(--primary-color);
+        }
+
+        .custom-emoji {
+            width: 32px;
+            height: 32px;
+            position: relative;
+        }
+
+        .emoji-face {
+            width: 32px;
+            height: 32px;
+            background: #fbbf24;
+            border-radius: 50%;
+            position: relative;
+            transition: transform 0.3s ease;
+        }
+
+        .emoji-eye {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: #000;
+            border-radius: 50%;
+            top: 10px;
+        }
+
+        .emoji-eye.left {
+            left: 8px;
+        }
+
+        .emoji-eye.right {
+            right: 8px;
+        }
+
+        .emoji-mouth {
+            position: absolute;
+            width: 16px;
+            height: 8px;
+            bottom: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-bottom: 2px solid #000;
+            border-radius: 0 0 8px 8px;
+        }
+
+        .emoji-face.happy .emoji-mouth {
+            border-radius: 8px 8px 0 0;
+            border-top: 2px solid #000;
+            border-bottom: 0;
+        }
+
+        .emoji-face.sad .emoji-mouth {
+            border-top: 2px solid #000;
+            border-bottom: 0;
+            transform: translateX(-50%) rotate(180deg);
+        }
+
+        #headerBalance {
+            font-weight: 700;
+            font-size: 16px;
+            color: var(--primary-color);
+        }
+
+        .menu-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: var(--card-bg);
+            border: 2px solid var(--primary-color);
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .menu-btn:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        /* Page Container */
+        .page-container {
+            padding: 20px;
+            padding-bottom: 80px;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .page {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Card */
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        [data-theme="dark"] .card {
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Dashboard */
+        .dashboard-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 15px;
+            background: rgba(22, 163, 74, 0.05);
+            border-radius: 12px;
+            border: 1px solid rgba(22, 163, 74, 0.1);
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .quick-tools-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--text-color);
+        }
+
+        .quick-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .quick-button {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px 15px;
+            background: var(--card-bg);
+            border: 2px solid var(--primary-color);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: var(--transition);
+            text-align: center;
+            min-height: 100px;
+        }
+
+        .quick-button:hover {
+            background: rgba(22, 163, 74, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .quick-button i {
+            font-size: 28px;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+
+        .quick-button span {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        /* User Selection */
+        .user-type-options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin: 25px 0;
+        }
+
+        .user-type-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 25px 15px;
+            background: var(--card-bg);
+            border: 2px solid var(--primary-color);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: var(--transition);
+            text-align: center;
+        }
+
+        .user-type-btn.active {
+            background: rgba(22, 163, 74, 0.15);
+            border-color: var(--primary-color);
+        }
+
+        .user-type-btn:hover {
+            background: rgba(22, 163, 74, 0.1);
+        }
+
+        .user-type-btn i {
+            font-size: 32px;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+
+        .user-type-btn span {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .business-category-options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin: 25px 0;
+        }
+
+        .business-category-btn {
+            padding: 18px 10px;
+            background: var(--card-bg);
+            border: 2px solid var(--primary-color);
+            border-radius: 12px;
+            text-align: center;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-color);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .business-category-btn.active {
+            background: rgba(22, 163, 74, 0.15);
+        }
+
+        .business-category-btn:hover {
+            background: rgba(22, 163, 74, 0.1);
+        }
+
+        /* Question Page */
+        .question-header {
+            margin-bottom: 20px;
+        }
+
+        .question-number {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .progress-bar {
+            height: 6px;
+            background: rgba(22, 163, 74, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--primary-color);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        .live-balance {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .live-balance-label {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+
+        .live-balance-amount {
+            font-size: 32px;
+            font-weight: 700;
+        }
+
+        .live-balance-amount.live-balance-negative {
+            color: #ff6b6b;
+        }
+
+        .question-text {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 25px;
+            text-align: center;
+            color: var(--text-color);
+            line-height: 1.4;
+        }
+
+        .amount-input {
+            width: 100%;
+            padding: 20px;
+            font-size: 32px;
+            text-align: center;
+            border: 3px solid var(--primary-color);
+            border-radius: 12px;
+            background: var(--card-bg);
+            color: var(--text-color);
+            margin-bottom: 25px;
+            font-weight: 700;
+            outline: none;
+        }
+
+        .numeric-keypad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+
+        .keypad-btn {
+            padding: 20px;
+            font-size: 24px;
+            font-weight: 600;
+            background: var(--card-bg);
+            border: 2px solid var(--primary-color);
+            border-radius: 12px;
+            color: var(--text-color);
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .keypad-btn:hover {
+            background: rgba(22, 163, 74, 0.1);
+        }
+
+        .keypad-btn.backspace {
+            font-size: 20px;
+        }
+
+        .keypad-btn.clear {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: #ef4444;
+            color: #ef4444;
+        }
+
+        .frequency-options {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            justify-content: center;
+        }
+
+        .frequency-btn {
+            padding: 12px 24px;
+            background: var(--card-bg);
+            border: 2px solid var(--primary-color);
+            border-radius: 8px;
+            color: var(--text-color);
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .frequency-btn.active {
+            background: rgba(22, 163, 74, 0.15);
+            border-color: var(--primary-color);
+        }
+
+        .frequency-btn:hover {
+            background: rgba(22, 163, 74, 0.1);
+        }
+
+        /* Buttons */
+        .nav-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 25px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 16px;
+            border-radius: 12px;
+            border: none;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover);
+        }
+
+        .btn-secondary {
+            background: var(--card-bg);
+            color: var(--text-color);
+            border: 2px solid var(--primary-color);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(22, 163, 74, 0.1);
+        }
+
+        .btn-small {
+            padding: 10px 15px;
+            font-size: 14px;
+        }
+
+        /* Calculator Styles */
+        .calculator-display {
+            width: 100%;
+            padding: 20px;
+            font-size: 28px;
+            text-align: right;
+            border-radius: var(--border-radius);
+            border: 2px solid var(--primary-color);
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            margin-bottom: 20px;
+            font-weight: 600;
+            min-height: 100px;
+            overflow-x: auto;
+            white-space: nowrap;
+            font-family: 'Courier New', monospace;
+            word-break: break-all;
+        }
+
+        .calculator-history {
+            font-size: 16px;
+            color: var(--text-secondary);
+            min-height: 24px;
+            margin-bottom: 5px;
+            text-align: right;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+
+        .calculator-buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+
+        .calc-btn {
+            padding: 20px;
+            border-radius: 12px;
+            background-color: var(--card-bg);
+            border: 2px solid var(--primary-color);
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-color);
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: manipulation;
+        }
+
+        .calc-btn:hover, .calc-btn:active {
+            background-color: rgba(22, 163, 74, 0.1);
+        }
+
+        .calc-btn.operator {
+            background-color: rgba(22, 163, 74, 0.15);
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        .calc-btn.equals {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            color: white;
+        }
+
+        .calc-btn.clear {
+            background-color: rgba(239, 68, 68, 0.15);
+            border-color: #ef4444;
+            color: #ef4444;
+        }
+
+        .calc-btn.special {
+            background-color: rgba(245, 158, 11, 0.15);
+            border-color: #f59e0b;
+            color: #f59e0b;
+        }
+
+        /* Notes Styles */
+        .notes-history-page {
+            display: block;
+        }
+
+        .notes-history-page.hidden {
+            display: none;
+        }
+
+        .notes-editor-page {
+            display: none;
+        }
+
+        .notes-editor-page.active {
+            display: block;
+        }
+
+        .notes-editor-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg-color);
+            z-index: 1000;
+            padding: 15px;
+            overflow-y: auto;
+        }
+
+        .notes-editor-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--primary-color);
+        }
+
+        .note-action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .note-action-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: var(--card-bg);
+            border: 2px solid var(--primary-color);
+            color: var(--primary-color);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+        }
+
+        .note-action-btn:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .note-title-input {
+            width: 100%;
+            padding: 15px;
+            font-size: 20px;
+            font-weight: 600;
+            background: var(--card-bg);
+            color: var(--text-color);
+            border: 2px solid var(--primary-color);
+            border-radius: var(--border-radius);
+            margin-bottom: 15px;
+            outline: none;
+        }
+
+        .notes-editor {
+            position: relative;
+            background: linear-gradient(to bottom, var(--card-bg) 0%, var(--card-bg) 100%);
+            background-size: 100% 28px;
+            line-height: 28px;
+            border: 2px solid var(--primary-color);
+            border-radius: var(--border-radius);
+            padding: 25px;
+            min-height: 300px;
+            font-size: 16px;
+            color: var(--text-color);
+            resize: vertical;
+            width: 100%;
+            overflow: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            outline: none;
+        }
+
+        .notes-editor:empty:before {
+            content: attr(placeholder);
+            color: var(--text-secondary);
+            pointer-events: none;
+        }
+
+        .notes-editor::before {
+            content: "";
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            background: linear-gradient(to bottom, transparent 0%, transparent 27px, rgba(22, 163, 74, 0.05) 27px, rgba(22, 163, 74, 0.05) 28px);
+            background-size: 100% 28px;
+            pointer-events: none;
+            border-radius: var(--border-radius);
+        }
+
+        .notes-list {
+            margin-top: 20px;
+        }
+
+        .note-item {
+            background-color: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 15px;
+            margin-bottom: 12px;
+            border: 2px solid rgba(22, 163, 74, 0.2);
+            position: relative;
+            background: linear-gradient(to bottom, var(--card-bg) 0%, var(--card-bg) 100%);
+            background-size: 100% 28px;
+            line-height: 28px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .note-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .note-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(22, 163, 74, 0.2);
+        }
+
+        .note-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .note-date {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        .note-content {
+            color: var(--text-color);
+            line-height: 24px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-size: 15px;
+        }
+
+        /* Expenses Tracker Styles */
+        .balance-display {
+            text-align: center;
+            padding: 25px;
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+            border-radius: var(--border-radius);
+            color: white;
+            margin-bottom: 20px;
+        }
+
+        .balance-display h3 {
+            font-size: 18px;
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+
+        .balance-amount {
+            font-size: 42px;
+            font-weight: 700;
+        }
+
+        .expense-categories {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .expense-category {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 10px;
+            border-radius: var(--border-radius);
+            background: var(--card-bg);
+            border: 2px solid var(--primary-color);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .expense-category:hover {
+            background: rgba(22, 163, 74, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .expense-category i {
+            font-size: 28px;
+            margin-bottom: 8px;
+            color: var(--primary-color);
+        }
+
+        .expense-category span {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .expenses-list {
+            margin-top: 20px;
+        }
+
+        .expense-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            margin-bottom: 10px;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .expense-info {
+            flex: 1;
+        }
+
+        .expense-category-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            background: rgba(22, 163, 74, 0.1);
+            color: var(--primary-color);
+            border-radius: 12px;
+            font-size: 12px;
+            margin-right: 8px;
+        }
+
+        .expense-amount {
+            font-weight: 700;
+            color: var(--danger-color);
+            font-size: 16px;
+        }
+
+        .expense-date {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        .balance-input-section, .add-income-section {
+            background: rgba(22, 163, 74, 0.05);
+            border: 2px solid var(--primary-color);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .add-income-section {
+            border-color: var(--success-color);
+            background: rgba(16, 185, 129, 0.05);
+        }
+
+        input[type="number"], input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            border-radius: 12px;
+            border: 2px solid var(--primary-color);
+            background: var(--card-bg);
+            color: var(--text-color);
+            font-size: 16px;
+            margin-bottom: 10px;
+            outline: none;
+        }
+
+        .add-income-section input {
+            border-color: var(--success-color);
+        }
+
+        /* Analytics Styles */
+        .analytics-summary {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .analytics-summary-item {
+            text-align: center;
+            padding: 20px;
+            background: rgba(22, 163, 74, 0.05);
+            border-radius: 12px;
+            border: 1px solid rgba(22, 163, 74, 0.1);
+        }
+
+        .analytics-summary-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .analytics-summary-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .analytics-summary-value.positive {
+            color: var(--success-color);
+        }
+
+        .analytics-summary-value.negative {
+            color: var(--danger-color);
+        }
+
+        .chart-container {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(22, 163, 74, 0.1);
+        }
+
+        .chart-container h3 {
+            margin-bottom: 15px;
+            color: var(--primary-color);
+            font-size: 18px;
+        }
+
+        .chart-container canvas {
+            width: 100% !important;
+            height: 250px !important;
+        }
+
+        /* Menu / Sidebar */
+        .menu-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .menu-overlay.active {
+            display: block;
+        }
+
+        .menu-sidebar {
+            position: fixed;
+            top: 0;
+            right: -350px;
+            width: 320px;
+            height: 100%;
+            background: var(--card-bg);
+            z-index: 1001;
+            padding: 20px;
+            overflow-y: auto;
+            transition: right 0.3s ease;
+            box-shadow: -5px 0 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .menu-sidebar.active {
+            right: 0;
+        }
+
+        .menu-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--primary-color);
+        }
+
+        .menu-header h3 {
+            color: var(--primary-color);
+            font-size: 22px;
+        }
+
+        .close-menu {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--card-bg);
+            border: 2px solid var(--primary-color);
+            color: var(--primary-color);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: var(--transition);
+        }
+
+        .close-menu:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .theme-toggle {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: rgba(22, 163, 74, 0.05);
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .theme-toggle-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .theme-toggle-label i {
+            color: var(--primary-color);
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 28px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--primary-color);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(22px);
+        }
+
+        .menu-section {
+            margin-bottom: 25px;
+        }
+
+        .menu-section h4 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .theme-colors {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+
+        .theme-color {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: var(--transition);
+        }
+
+        .theme-color.active {
+            border-color: var(--text-color);
+            transform: scale(1.1);
+        }
+
+        .input-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        .setting-input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 12px;
+            border: 2px solid var(--primary-color);
+            background: var(--card-bg);
+            color: var(--text-color);
+            font-size: 16px;
+            outline: none;
+        }
+
+        .currency-selector {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .currency-option {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 15px 10px;
+            border-radius: 12px;
+            border: 2px solid var(--primary-color);
+            background: var(--card-bg);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .currency-option.active {
+            background: rgba(22, 163, 74, 0.15);
+            border-color: var(--primary-color);
+        }
+
+        .currency-option:hover {
+            background: rgba(22, 163, 74, 0.1);
+        }
+
+        .currency-flag {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .currency-symbol {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .history-item {
+            padding: 12px;
+            background: rgba(22, 163, 74, 0.05);
+            border-radius: 12px;
+            margin-bottom: 10px;
+            border-left: 3px solid var(--primary-color);
+        }
+
+        .history-date {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 5px;
+        }
+
+        .history-details {
+            font-size: 14px;
+            color: var(--text-color);
+        }
+
+        /* Footer Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--card-bg);
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+            display: flex;
+            padding: 10px 0;
+            z-index: 99;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        [data-theme="dark"] .bottom-nav {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 5px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: var(--transition);
+            text-decoration: none;
+        }
+
+        .nav-item.active {
+            color: var(--primary-color);
+        }
+
+        .nav-item:hover {
+            color: var(--primary-color);
+        }
+
+        .nav-item i {
+            font-size: 20px;
+            margin-bottom: 4px;
+        }
+
+        .nav-item span {
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .page-container {
+                padding: 15px;
+                padding-bottom: 70px;
+            }
+            
+            .quick-buttons {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .quick-button {
+                min-height: 90px;
+                padding: 15px 10px;
+            }
+            
+            .amount-input {
+                font-size: 28px;
+                padding: 15px;
+            }
+            
+            .keypad-btn {
+                padding: 15px;
+            }
+            
+            .balance-amount {
+                font-size: 36px;
+            }
+            
+            .expense-categories {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .analytics-summary {
+                grid-template-columns: 1fr;
+            }
+            
+            .menu-sidebar {
+                width: 300px;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .user-type-options, .business-category-options {
+                grid-template-columns: 1fr;
+            }
+            
+            .expense-categories {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .currency-selector {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        /* Utility Classes */
+        .hidden {
+            display: none !important;
+        }
+
+        .visible {
+            display: block !important;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .mt-20 {
+            margin-top: 20px;
+        }
+
+        .mb-20 {
+            margin-bottom: 20px;
+        }
+
+        .p-20 {
+            padding: 20px;
+        }
+
+        /* Dashboard Footer Links */
+.dashboard-footer-links {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid rgba(0,0,0,0.08);
+}
+
+[data-theme="dark"] .dashboard-footer-links {
+    border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+.footer-link {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.footer-link i {
+    font-size: 14px;
+}
+
+.footer-link:hover {
+    color: var(--primary-color);
+}
+
+    </style>
+</head>
+<body data-theme="light">
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo" id="logoBtn">
+                <i class="fas fa-chart-line"></i>
+                <span>BudgetFlow</span>
+            </div>
+            
+            <div class="compact-balance">
+                <div class="custom-emoji">
+                    <div class="emoji-face" id="headerEmoji">
+                        <div class="emoji-eye left"></div>
+                        <div class="emoji-eye right"></div>
+                        <div class="emoji-mouth"></div>
+                    </div>
+                </div>
+                <span id="headerBalance">$0</span>
+            </div>
+            
+            <button class="menu-btn" id="menuBtn">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+
+        <!-- Main Content -->
+        <div class="page-container">
+            <!-- Dashboard Page -->
+            <div class="page active" id="dashboardPage"> <!-- About & Privacy Links -->
+<div class="dashboard-footer-links">
+  <a href="about.html" class="footer-link">
+    <i class="fas fa-circle-info"></i>
+    <span>About</span>
+  </a>
+  <a href="privacy.html" class="footer-link">
+    <i class="fas fa-shield-halved"></i>
+    <span>Privacy</span>
+  </a>
+</div>
+
+                <div class="card">
+                    <div class="dashboard-stats">
+                        <div class="stat-item">
+                            <div class="stat-label">Today</div>
+                            <div class="stat-value" id="currentDate">Loading...</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Balance</div>
+                            <div class="stat-value" id="dashboardBalance">$0</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">History</div>
+                            <div class="stat-value" id="historyCount">0</div>
+                        </div>
+                    </div>
+                    
+                    <div class="quick-tools-title">Quick Tools</div>
+                    <div class="quick-buttons">
+                        <div class="quick-button" id="startBudgetBtn">
+                            <i class="fas fa-wallet"></i>
+                            <span>Start Budget</span>
+                        </div>
+                        <div class="quick-button" id="calculatorBtn">
+                            <i class="fas fa-calculator"></i>
+                            <span>Calculator</span>
+                        </div>
+                        <div class="quick-button" id="notesBtn">
+                            <i class="fas fa-sticky-note"></i>
+                            <span>Notes</span>
+                        </div>
+                        <div class="quick-button" id="expensesBtn">
+                            <i class="fas fa-list"></i>
+                            <span>Track Expenses</span>
+                        </div>
+                        <div class="quick-button" id="analyticsBtn">
+                            <i class="fas fa-chart-pie"></i>
+                            <span>Analytics</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- User Type Selection Page -->
+            <div class="page" id="userTypePage">
+                <div class="card">
+                    <h2 style="margin-bottom: 10px; color: var(--primary-color); font-size: 22px;">Select Your Profile</h2>
+                    <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 14px;">Choose the option that best describes you</p>
+                    
+                    <div class="user-type-options">
+                        <div class="user-type-btn" data-type="student">
+                            <i class="fas fa-graduation-cap"></i>
+                            <span>Student</span>
+                        </div>
+                        
+                        <div class="user-type-btn" data-type="parent">
+                            <i class="fas fa-home"></i>
+                            <span>Parent</span>
+                        </div>
+                        
+                        <div class="user-type-btn" data-type="business">
+                            <i class="fas fa-briefcase"></i>
+                            <span>Business Owner</span>
+                        </div>
+                        
+                        <div class="user-type-btn" data-type="freelancer">
+                            <i class="fas fa-laptop-code"></i>
+                            <span>Freelancer</span>
+                        </div>
+                    </div>
+                    
+                    <div class="nav-buttons">
+                        <button class="btn btn-secondary" id="backToDashboardBtn">Back</button>
+                        <button class="btn btn-primary" id="nextToBusinessBtn">Next</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Business Category Selection Page -->
+            <div class="page" id="businessCategoryPage">
+                <div class="card">
+                    <h2 style="margin-bottom: 10px; color: var(--primary-color); font-size: 22px;">Select Business Category</h2>
+                    <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 14px;">Choose your business category for tailored budgeting</p>
+                    
+                    <div class="business-category-options">
+                        <div class="business-category-btn" data-category="big-company">Big Company</div>
+                        <div class="business-category-btn" data-category="small-business">Small Business</div>
+                        <div class="business-category-btn" data-category="services">Services</div>
+                        <div class="business-category-btn" data-category="retail">Retail</div>
+                        <div class="business-category-btn" data-category="food">Food/Restaurant</div>
+                        <div class="business-category-btn" data-category="manufacturing">Manufacturing</div>
+                        <div class="business-category-btn" data-category="store">Store</div>
+                        <div class="business-category-btn" data-category="other" style="grid-column: span 2;">Other</div>
+                    </div>
+                    
+                    <div class="nav-buttons">
+                        <button class="btn btn-secondary" id="backToUserTypeBtn">Back</button>
+                        <button class="btn btn-primary" id="startQuestionsBtn">Start Questions</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Question Page -->
+            <div class="page" id="questionPage">
+                <div class="card">
+                    <div class="question-header">
+                        <div>
+                            <div class="question-number">Question <span id="currentQuestion">1</span>/<span id="totalQuestions">7</span></div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="progressFill" style="width: 14%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="live-balance">
+                        <div class="live-balance-label">Remaining Budget</div>
+                        <div class="live-balance-amount" id="liveBalance">$0</div>
+                    </div>
+                    
+                    <div class="question-text" id="questionText">What is your monthly budget?</div>
+                    
+                    <input type="text" class="amount-input" id="expenseAmount" value="0" readonly>
+                    
+                    <div class="numeric-keypad" id="numericKeypad">
+                        <button class="keypad-btn" data-key="1">1</button>
+                        <button class="keypad-btn" data-key="2">2</button>
+                        <button class="keypad-btn" data-key="3">3</button>
+                        <button class="keypad-btn" data-key="4">4</button>
+                        <button class="keypad-btn" data-key="5">5</button>
+                        <button class="keypad-btn" data-key="6">6</button>
+                        <button class="keypad-btn" data-key="7">7</button>
+                        <button class="keypad-btn" data-key="8">8</button>
+                        <button class="keypad-btn" data-key="9">9</button>
+                        <button class="keypad-btn" data-key=".">.</button>
+                        <button class="keypad-btn" data-key="0">0</button>
+                        <button class="keypad-btn backspace" id="backspaceBtn">
+                            <i class="fas fa-backspace"></i>
+                        </button>
+                        <button class="keypad-btn clear" id="clearBtn">Clear</button>
+                    </div>
+                    
+                    <div class="frequency-options" id="frequencyOptions">
+                        <button class="frequency-btn active" data-freq="monthly">Monthly</button>
+                        <button class="frequency-btn" data-freq="weekly">Weekly</button>
+                        <button class="frequency-btn" data-freq="daily">Daily</button>
+                    </div>
+                    
+                    <div class="nav-buttons">
+                        <button class="btn btn-secondary" id="prevBtn">Back</button>
+                        <button class="btn btn-primary" id="nextBtn">Next</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Result Page -->
+            <div class="page" id="resultPage">
+                <div class="card">
+                    <h2 style="text-align: center; color: var(--primary-color); margin-bottom: 20px;">Budget Summary</h2>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                            <div>
+                                <div style="font-size: 12px; color: var(--text-secondary);">Profile</div>
+                                <div style="font-weight: 600;" id="resultProfile">-</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 12px; color: var(--text-secondary);">Business</div>
+                                <div style="font-weight: 600;" id="resultBusiness">-</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <div style="display: flex; justify-content: space-between; padding: 10px; background: rgba(22, 163, 74, 0.05); border-radius: var(--border-radius);">
+                            <div style="font-weight: 600;">Total Expenses</div>
+                            <div style="font-weight: 600;" id="totalExpenses">$0</div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; padding: 10px; background: rgba(22, 163, 74, 0.1); border-radius: var(--border-radius); margin-top: 10px;">
+                            <div style="font-weight: 600;">Remaining Balance</div>
+                            <div style="font-weight: 600;" id="remainingBalance">$0</div>
+                        </div>
+                    </div>
+                    
+                    <button class="btn btn-primary" id="finishBtn">Back to Dashboard</button>
+                </div>
+            </div>
+
+            <!-- Calculator Page -->
+            <div class="page" id="calculatorPage">
+                <div class="card">
+                    <h2 style="text-align: center; color: var(--primary-color); margin-bottom: 15px;">Calculator</h2>
+                    
+                    <div class="calculator-display">
+                        <div class="calculator-history" id="calcHistory"></div>
+                        <div id="calcDisplay">0</div>
+                    </div>
+                    
+                    <div class="calculator-buttons">
+                        <button class="calc-btn clear" data-action="clear">C</button>
+                        <button class="calc-btn clear" data-action="clear-entry">CE</button>
+                        <button class="calc-btn special" data-action="backspace">⌫</button>
+                        <button class="calc-btn operator" data-action="/">÷</button>
+                        
+                        <button class="calc-btn" data-number="7">7</button>
+                        <button class="calc-btn" data-number="8">8</button>
+                        <button class="calc-btn" data-number="9">9</button>
+                        <button class="calc-btn operator" data-action="*">×</button>
+                        
+                        <button class="calc-btn" data-number="4">4</button>
+                        <button class="calc-btn" data-number="5">5</button>
+                        <button class="calc-btn" data-number="6">6</button>
+                        <button class="calc-btn operator" data-action="-">-</button>
+                        
+                        <button class="calc-btn" data-number="1">1</button>
+                        <button class="calc-btn" data-number="2">2</button>
+                        <button class="calc-btn" data-number="3">3</button>
+                        <button class="calc-btn operator" data-action="+">+</button>
+                        
+                        <button class="calc-btn" data-action="negate">±</button>
+                        <button class="calc-btn" data-number="0">0</button>
+                        <button class="calc-btn" data-action=".">.</button>
+                        <button class="calc-btn equals" data-action="=">=</button>
+                    </div>
+                    
+                    <button class="btn" id="backFromCalcBtn" style="margin-top: 15px;">
+                        <i class="fas fa-arrow-left"></i> Back to Dashboard
+                    </button>
+                </div>
+            </div>
+
+            <!-- Notes Page -->
+            <div class="page" id="notesPage">
+                <div class="card notes-history-page" id="notesHistoryPage">
+                    <h2 style="text-align: center; color: var(--primary-color); margin-bottom: 15px;">Notes</h2>
+                    
+                    <button class="btn btn-primary" id="addNoteBtn" style="margin-bottom: 20px;">
+                        <i class="fas fa-plus"></i> Add New Note
+                    </button>
+                    
+                    <div class="notes-list" id="notesList">
+                        <!-- Notes will be loaded here -->
+                    </div>
+                    
+                    <button class="btn" id="backFromNotesBtn" style="margin-top: 20px;">
+                        <i class="fas fa-arrow-left"></i> Back to Dashboard
+                    </button>
+                </div>
+                
+                <!-- Note Editor Page -->
+                <div class="notes-editor-page" id="notesEditorPage">
+                    <div class="notes-editor-container">
+                        <div class="notes-editor-header">
+                            <button class="note-action-btn" id="backToNotesHistoryBtn">
+                                <i class="fas fa-arrow-left"></i>
+                            </button>
+                            <div class="note-action-buttons">
+                                <button class="note-action-btn" id="undoBtn" title="Undo">
+                                    <i class="fas fa-undo"></i>
+                                </button>
+                                <button class="note-action-btn" id="redoBtn" title="Redo">
+                                    <i class="fas fa-redo"></i>
+                                </button>
+                                <button class="note-action-btn" id="saveNoteEditorBtn" title="Save Note">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <input type="text" class="note-title-input" id="noteTitleInput" placeholder="Note Title">
+                        
+                        <div class="notes-editor" id="notesEditor" contenteditable="true" placeholder="Start typing your note here..."></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Expenses Tracker Page -->
+            <div class="page" id="expensesPage">
+                <div class="card">
+                    <h2 style="text-align: center; color: var(--primary-color); margin-bottom: 15px;">Expenses Tracker</h2>
+                    
+                    <div class="balance-display">
+                        <h3>Current Balance</h3>
+                        <div class="balance-amount" id="currentBalance">$0.00</div>
+                    </div>
+                    
+                    <div class="balance-input-section">
+                        <h3 style="margin-bottom: 10px; color: var(--primary-color);">Set Starting Balance</h3>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <input type="number" id="startingBalanceInput" placeholder="0.00" style="flex: 1; min-width: 150px;">
+                            <button class="btn btn-primary" id="setBalanceBtn" style="flex-shrink: 0;">Set Balance</button>
+                        </div>
+                    </div>
+                    
+                    <h3 style="margin: 20px 0 10px; color: var(--primary-color);">Add Expense</h3>
+                    <div class="expense-categories" id="expenseCategories">
+                        <div class="expense-category" data-category="food">
+                            <i class="fas fa-utensils"></i>
+                            <span>Food</span>
+                        </div>
+                        <div class="expense-category" data-category="transport">
+                            <i class="fas fa-bus"></i>
+                            <span>Transport</span>
+                        </div>
+                        <div class="expense-category" data-category="shopping">
+                            <i class="fas fa-shopping-bag"></i>
+                            <span>Shopping</span>
+                        </div>
+                        <div class="expense-category" data-category="health">
+                            <i class="fas fa-heartbeat"></i>
+                            <span>Health</span>
+                        </div>
+                        <div class="expense-category" data-category="entertainment">
+                            <i class="fas fa-film"></i>
+                            <span>Entertainment</span>
+                        </div>
+                        <div class="expense-category" data-category="other">
+                            <i class="fas fa-ellipsis-h"></i>
+                            <span>Other</span>
+                        </div>
+                    </div>
+                    
+                    <div id="expenseInputSection" style="display: none; margin-top: 20px;">
+                        <h4 id="selectedCategoryTitle" style="margin-bottom: 10px; color: var(--primary-color);"></h4>
+                        <div style="display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap;">
+                            <input type="number" id="expenseAmountInput" placeholder="Amount" style="flex: 1; min-width: 120px;">
+                            <input type="text" id="expenseDescription" placeholder="Description (optional)" style="flex: 2; min-width: 150px;">
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <button class="btn btn-secondary" id="cancelExpenseBtn">Cancel</button>
+                            <button class="btn btn-primary" id="addExpenseBtn">Add Expense</button>
+                        </div>
+                    </div>
+                    
+                    <div class="add-income-section">
+                        <h3 style="margin-bottom: 10px; color: var(--success-color);">Add Income</h3>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <input type="number" id="incomeAmountInput" placeholder="Amount" style="flex: 1; min-width: 120px;">
+                            <input type="text" id="incomeDescription" placeholder="Source (optional)" style="flex: 2; min-width: 150px;">
+                        </div>
+                        <button class="btn" style="background: var(--success-color); color: white; margin-top: 10px;" id="addIncomeBtn">
+                            <i class="fas fa-plus"></i> Add Income
+                        </button>
+                    </div>
+                    
+                    <div class="expenses-list" id="expensesList">
+                        <!-- Expenses will be loaded here -->
+                    </div>
+                    
+                    <button class="btn" id="backFromExpensesBtn" style="margin-top: 20px;">
+                        <i class="fas fa-arrow-left"></i> Back to Dashboard
+                    </button>
+                </div>
+            </div>
+
+            <!-- Analytics Page -->
+            <div class="page" id="analyticsPage">
+                <div class="card">
+                    <h2 style="text-align: center; color: var(--primary-color); margin-bottom: 15px;">Budget Analytics</h2>
+                    
+                    <div id="noDataMessage" style="text-align: center; color: var(--text-secondary); padding: 40px 20px;">
+                        <i class="fas fa-chart-line" style="font-size: 48px; margin-bottom: 15px; opacity: 0.5;"></i>
+                        <p>No budget data yet. Create a budget to see analytics!</p>
+                    </div>
+                    
+                    <div id="analyticsContent" style="display: none;">
+                        <div class="analytics-summary">
+                            <div class="analytics-summary-item">
+                                <div class="analytics-summary-label">Total Income</div>
+                                <div class="analytics-summary-value" id="analyticsIncome">$0</div>
+                            </div>
+                            <div class="analytics-summary-item">
+                                <div class="analytics-summary-label">Total Expenses</div>
+                                <div class="analytics-summary-value" id="analyticsExpenses">$0</div>
+                            </div>
+                            <div class="analytics-summary-item">
+                                <div class="analytics-summary-label">Remaining</div>
+                                <div class="analytics-summary-value" id="analyticsRemaining">$0</div>
+                            </div>
+                            <div class="analytics-summary-item">
+                                <div class="analytics-summary-label">Savings Rate</div>
+                                <div class="analytics-summary-value" id="analyticsSavingsRate">0%</div>
+                            </div>
+                        </div>
+                        
+                        <div class="chart-container">
+                            <h3>Expense Breakdown</h3>
+                            <canvas id="expensePieChart"></canvas>
+                        </div>
+                        
+                        <div class="chart-container">
+                            <h3>Budget Overview</h3>
+                            <canvas id="budgetBarChart"></canvas>
+                        </div>
+                        
+                        <div class="chart-container">
+                            <h3>Balance Trend</h3>
+                            <canvas id="balanceLineChart"></canvas>
+                        </div>
+                        
+                        <div style="margin-top: 20px;">
+                            <h3 style="margin-bottom: 10px; color: var(--primary-color);">Top Expenses</h3>
+                            <div id="topExpensesList">
+                                <!-- Top expenses will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button class="btn" id="backFromAnalyticsBtn" style="margin-top: 20px;">
+                        <i class="fas fa-arrow-left"></i> Back to Dashboard
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Navigation -->
+        <div class="bottom-nav">
+            <a href="#" class="nav-item active" data-page="dashboard">
+                <i class="fas fa-home"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="#" class="nav-item" data-page="expenses">
+                <i class="fas fa-list"></i>
+                <span>Expenses</span>
+            </a>
+            <a href="#" class="nav-item" data-page="calculator">
+                <i class="fas fa-calculator"></i>
+                <span>Calculator</span>
+            </a>
+            <a href="#" class="nav-item" data-page="notes">
+                <i class="fas fa-sticky-note"></i>
+                <span>Notes</span>
+            </a>
+            <a href="#" class="nav-item" data-page="analytics">
+                <i class="fas fa-chart-pie"></i>
+                <span>Analytics</span>
+            </a>
+        </div>
+
+        <!-- Menu / Sidebar -->
+        <div class="menu-overlay" id="menuOverlay"></div>
+        <div class="menu-sidebar" id="menuSidebar">
+            <div class="menu-header">
+                <h3>Settings</h3>
+                <button class="close-menu" id="closeMenuBtn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="theme-toggle">
+                <div class="theme-toggle-label">
+                    <i class="fas fa-moon"></i>
+                    <span>Dark Mode</span>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="themeToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            
+            <div class="menu-section">
+                <h4>Theme Color</h4>
+                <div class="theme-colors">
+                    <div class="theme-color active" style="background-color: #16a34a;" data-color="#16a34a"></div>
+                    <div class="theme-color" style="background-color: #3b82f6;" data-color="#3b82f6"></div>
+                    <div class="theme-color" style="background-color: #8b5cf6;" data-color="#8b5cf6"></div>
+                    <div class="theme-color" style="background-color: #ef4444;" data-color="#ef4444"></div>
+                    <div class="theme-color" style="background-color: #f59e0b;" data-color="#f59e0b"></div>
+                    <div class="theme-color" style="background-color: #10b981;" data-color="#10b981"></div>
+                    <div class="theme-color" style="background-color: #ec4899;" data-color="#ec4899"></div>
+                    <div class="theme-color" style="background-color: #6366f1;" data-color="#6366f1"></div>
+            </div>
+            
+            <div class="menu-section">
+                <h4>Currency Settings</h4>
+                <div style="margin-bottom: 10px;">
+                    <label class="input-label">Days in Month</label>
+                    <input type="number" class="setting-input" id="daysInMonth" value="30" min="28" max="31">
+                </div>
+                
+                <div>
+                    <label class="input-label">Select Currency</label>
+                    <div class="currency-selector" id="currencySelector">
+                        <!-- Currency options will be generated here -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="menu-section">
+                <h4>Budget History</h4>
+                <div id="historyList">
+                    <!-- History items will be added here -->
+                </div>
+            </div>
+            
+            <button class="btn btn-small" id="clearHistoryBtn" style="margin-top: 15px; background-color: rgba(239, 68, 68, 0.1); border-color: #ef4444; color: #ef4444;">
+                <i class="fas fa-trash"></i> Clear History
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // QUESTIONS DATA
+        // ============================================
+        const questions = {
+            student: [
+                { text: "What is your monthly budget/allowance?", key: "income" },
+                { text: "How many days per week do you go to school?", key: "school_days", nonMonetary: true },
+                { text: "How much do you spend on food/meals?", key: "food" },
+                { text: "How much do you spend on transportation (e.g., bus, gas)?", key: "transport" },
+                { text: "How much do you spend on tuition/books?", key: "tuition" },
+                { text: "How much do you spend on rent/housing?", key: "rent" },
+                { text: "How much do you spend on entertainment/social activities?", key: "entertainment" },
+                { text: "How much do you spend on technology (e.g., phone bill, apps)?", key: "tech" },
+                { text: "How much do you spend on health/medical (e.g., insurance, meds)?", key: "health" },
+                { text: "How much do you spend on clothing/personal care?", key: "personal" },
+                { text: "How much do you spend on study supplies (beyond books)?", key: "supplies" },
+                { text: "How much do you spend on extracurriculars/clubs?", key: "extracurricular" },
+                { text: "How much do you spend on travel/home visits?", key: "travel" },
+                { text: "How much do you set aside for savings/emergencies?", key: "savings" }
+            ],
+                       parent: [
+                { text: "What is your monthly budget?", key: "income" },
+                { text: "How many kids do you have?", key: "num_kids", nonMonetary: true, type: "number" },
+                { text: "How many kids are currently going to school?", key: "kids_in_school", nonMonetary: true, type: "number" },
+                { text: "How much do you spend on groceries/food?", key: "groceries" },
+                { text: "How much do you spend on utilities?", key: "utilities" },
+                { text: "How much do you spend on rent/mortgage?", key: "rent" },
+                { text: "How much do you spend on transportation?", key: "transport" },
+                { text: "How much do you spend on family health/insurance?", key: "health" },
+                { text: "How much do you spend on home maintenance?", key: "home_maintenance" },
+                { text: "How much do you spend on entertainment/outings?", key: "family_entertainment" },
+                { text: "How much do you spend on gifts/holidays?", key: "gifts" },
+                { text: "How much do you spend on children's clothing/toys?", key: "kids_items" },
+                { text: "How much do you set aside for savings/retirement?", key: "savings" }
+            ],
+            business: {
+                'big-company': [
+                    { text: "What is your monthly budget?", key: "income" },
+                    { text: "How much on rent/office space?", key: "rent" },
+                    { text: "How much on utilities?", key: "utilities" },
+                    { text: "How much on salaries/payroll?", key: "salaries" },
+                    { text: "How much on employee benefits/training?", key: "benefits" },
+                    { text: "How much on materials/supplies?", key: "materials" },
+                    { text: "How much on marketing/advertising?", key: "marketing" },
+                    { text: "How much on insurance/liability?", key: "insurance" },
+                    { text: "How much on equipment/maintenance?", key: "equipment" },
+                    { text: "How much on professional services (legal/accounting)?", key: "professional_services" },
+                    { text: "How much on travel/business trips?", key: "travel" },
+                    { text: "How much on technology/software?", key: "tech" },
+                    { text: "How much on taxes/fees?", key: "taxes" },
+                    { text: "How much on R&D/innovation?", key: "rnd" },
+                    { text: "How much do you set aside for business savings/reserves?", key: "savings" }
+                ],
+                'small-business': [
+                    { text: "What is your monthly budget?", key: "income" },
+                    { text: "How much on rent/utilities?", key: "rent_utilities" },
+                    { text: "How much on inventory/supplies?", key: "inventory" },
+                    { text: "How much on marketing/advertising?", key: "marketing" },
+                    { text: "How much on employee wages?", key: "wages" },
+                    { text: "How much on taxes/licenses?", key: "taxes" },
+                    { text: "How much on insurance?", key: "insurance" },
+                    { text: "How much on equipment/maintenance?", key: "equipment" },
+                    { text: "How much on transportation/delivery?", key: "transport" },
+                    { text: "How much on professional services?", key: "services" },
+                    { text: "How much on technology/website?", key: "tech" },
+                    { text: "How much on business savings?", key: "savings" }
+                ],
+                'services': [
+                    { text: "What is your monthly budget?", key: "income" },
+                    { text: "How much on rent/office?", key: "rent" },
+                    { text: "How much on equipment/tools?", key: "equipment" },
+                    { text: "How much on marketing/advertising?", key: "marketing" },
+                    { text: "How much on insurance/liability?", key: "insurance" },
+                    { text: "How much on transportation?", key: "transport" },
+                    { text: "How much on supplies/materials?", key: "supplies" },
+                    { text: "How much on licensing/certifications?", key: "licensing" },
+                    { text: "How much on employee/subcontractor payments?", key: "payments" },
+                    { text: "How much on technology/software?", key: "tech" },
+                    { text: "How much on business savings?", key: "savings" }
+                ],
+                'retail': [
+                    { text: "What is your monthly budget?", key: "income" },
+                    { text: "How much on rent/utilities?", key: "rent" },
+                    { text: "How much on inventory?", key: "inventory" },
+                    { text: "How much on employee wages?", key: "wages" },
+                    { text: "How much on marketing/advertising?", key: "marketing" },
+                    { text: "How much on POS/technology?", key: "pos" },
+                    { text: "How much on insurance/security?", key: "insurance" },
+                    { text: "How much on store maintenance?", key: "maintenance" },
+                    { text: "How much on taxes/licenses?", key: "taxes" },
+                    { text: "How much on business savings?", key: "savings" }
+                ],
+                'food': [
+                    { text: "What is your monthly budget?", key: "income" },
+                    { text: "How much on rent/utilities?", key: "rent" },
+                    { text: "How much on food ingredients?", key: "ingredients" },
+                    { text: "How much on employee wages?", key: "wages" },
+                    { text: "How much on equipment/maintenance?", key: "equipment" },
+                    { text: "How much on marketing/advertising?", key: "marketing" },
+                    { text: "How much on licenses/permits?", key: "licenses" },
+                    { text: "How much on insurance?", key: "insurance" },
+                    { text: "How much on cleaning/supplies?", key: "cleaning" },
+                    { text: "How much on business savings?", key: "savings" }
+                ],
+                'manufacturing': [
+                    { text: "What is your monthly budget?", key: "income" },
+                    { text: "How much on raw materials?", key: "materials" },
+                    { text: "How much on labor/wages?", key: "labor" },
+                    { text: "How much on equipment/maintenance?", key: "equipment" },
+                    { text: "How much on utilities?", key: "utilities" },
+                    { text: "How much on rent/facility?", key: "rent" },
+                    { text: "How much on transportation/shipping?", key: "shipping" },
+                    { text: "How much on insurance?", key: "insurance" },
+                    { text: "How much on taxes/licenses?", key: "taxes" },
+                    { text: "How much on business savings?", key: "savings" }
+                ],
+                'store': [
+                    { text: "What is your monthly budget?", key: "income" },
+                    { text: "How much on rent/utilities?", key: "rent" },
+                    { text: "How much on inventory?", key: "inventory" },
+                    { text: "How much on employee wages?", key: "wages" },
+                    { text: "How much on marketing/advertising?", key: "marketing" },
+                    { text: "How much on store maintenance?", key: "maintenance" },
+                    { text: "How much on insurance?", key: "insurance" },
+                    { text: "How much on taxes/licenses?", key: "taxes" },
+                    { text: "How much on business savings?", key: "savings" }
+                ],
+                'other': [
+                    { text: "What is your monthly budget?", key: "income" },
+                    { text: "How much on rent/utilities?", key: "rent" },
+                    { text: "How much on supplies/materials?", key: "supplies" },
+                    { text: "How much on labor/wages?", key: "labor" },
+                    { text: "How much on marketing/advertising?", key: "marketing" },
+                    { text: "How much on equipment/tools?", key: "equipment" },
+                    { text: "How much on insurance?", key: "insurance" },
+                    { text: "How much on taxes/licenses?", key: "taxes" },
+                    { text: "How much on transportation?", key: "transport" },
+                    { text: "How much on business savings?", key: "savings" }
+                ]
+            },
+            freelancer: {
+                'writing': [
+                    { text: "What is your monthly budget?", key: "income" },
+                    { text: "How much on software/tools?", key: "software" },
+                    { text: "How much on marketing/portfolio?", key: "marketing" },
+                    { text: "How much on education/training?", key: "education" },
+                    { text: "How much on home office/utilities?", key: "office" },
+                    { text: "How much on taxes/accounting?", key: "taxes" },
+                    { text: "How much on insurance?", key: "insurance" },
+                    { text: "How much on business savings?", key: "savings" }
+                ],
+                'design': [
+                    { text: "What is your monthly budget?", key: "income" },
+                    { text: "How much on design software?", key: "software" },
+                    { text: "How much on hardware/equipment?", key: "hardware" },
+                    { text: "How much on marketing/portfolio?", key: "marketing" },
+                    { text: "How much on education/training?", key: "education" },
+                    { text: "How much on taxes/accounting?", key: "taxes" },
+                    { text: "How much on insurance?", key: "insurance" },
+                    { text: "How much on business savings?", key: "savings" }
+                ],
+                'development': [
+                    { text: "What is your monthly budget?", key: "income" },
+                    { text: "How much on software/licenses?", key: "software" },
+                    { text: "How much on hardware/equipment?", key: "hardware" },
+                    { text: "How much on hosting/domains?", key: "hosting" },
+                    { text: "How much on education/certifications?", key: "education" },
+                    { text: "How much on taxes/accounting?", key: "taxes" },
+                    { text: "How much on insurance?", key: "insurance" },
+                    { text: "How much on business savings?", key: "savings" }
+                ],
+                'marketing': [
+                    { text: "What is your monthly budget?", key: "income" },
+                    { text: "How much on marketing tools?", key: "tools" },
+                    { text: "How much on advertising budget?", key: "advertising" },
+                    { text: "How much on education/certifications?", key: "education" },
+                    { text: "How much on taxes/accounting?", key: "taxes" },
+                    { text: "How much on insurance?", key: "insurance" },
+                    { text: "How much on business savings?", key: "savings" }
+                ],
+                'administrative': [
+                    { text: "What is your monthly budget?", key: "income" },
+                    { text: "How much on software/tools?", key: "software" },
+                    { text: "How much on office supplies?", key: "supplies" },
+                    { text: "How much on communication (phone/internet)?", key: "communication" },
+                    { text: "How much on taxes/accounting?", key: "taxes" },
+                    { text: "How much on insurance?", key: "insurance" },
+                    { text: "How much on business savings?", key: "savings" }
+                ],
+                'finance': [
+                    { text: "What is your monthly budget?", key: "income" },
+                    { text: "How much on software/licenses?", key: "software" },
+                    { text: "How much on education/certifications?", key: "education" },
+                    { text: "How much on taxes/accounting?", key: "taxes" },
+                    { text: "How much on insurance?", key: "insurance" },
+                    { text: "How much on business savings?", key: "savings" }
+                ],
+                'consulting': [
+                    { text: "What is your monthly budget?", key: "income" },
+                    { text: "How much on marketing/networking?", key: "marketing" },
+                    { text: "How much on travel/meetings?", key: "travel" },
+                    { text: "How much on education/certifications?", key: "education" },
+                    { text: "How much on taxes/accounting?", key: "taxes" },
+                    { text: "How much on insurance?", key: "insurance" },
+                    { text: "How much on business savings?", key: "savings" }
+                ],
+                'education': [
+                    { text: "What is your monthly budget?", key: "income" },
+                    { text: "How much on teaching materials?", key: "materials" },
+                    { text: "How much on platform fees?", key: "platform" },
+                    { text: "How much on marketing?", key: "marketing" },
+                    { text: "How much on education/certifications?", key: "education" },
+                    { text: "How much on taxes/accounting?", key: "taxes" },
+                    { text: "How much on insurance?", key: "insurance" },
+                    { text: "How much on business savings?", key: "savings" }
+                ],
+                'other': [
+                    { text: "What is your monthly budget?", key: "income" },
+                    { text: "How much on tools/equipment?", key: "tools" },
+                    { text: "How much on marketing?", key: "marketing" },
+                    { text: "How much on education/training?", key: "education" },
+                    { text: "How much on taxes/accounting?", key: "taxes" },
+                    { text: "How much on insurance?", key: "insurance" },
+                    { text: "How much on business savings?", key: "savings" }
+                ]
+            }
+        };
+
+        const currencies = [
+            { code: 'USD', symbol: '$', name: 'US Dollar', flag: 'fi-us' },
+            { code: 'EUR', symbol: '€', name: 'Euro', flag: 'fi-eu' },
+            { code: 'GBP', symbol: '£', name: 'British Pound', flag: 'fi-gb' },
+            { code: 'JPY', symbol: '¥', name: 'Japanese Yen', flag: 'fi-jp' },
+            { code: 'AUD', symbol: 'A$', name: 'Australian Dollar', flag: 'fi-au' },
+            { code: 'CAD', symbol: 'C$', name: 'Canadian Dollar', flag: 'fi-ca' },
+            { code: 'INR', symbol: '₹', name: 'Indian Rupee', flag: 'fi-in' },
+            { code: 'CNY', symbol: '¥', name: 'Chinese Yuan', flag: 'fi-cn' },
+            { code: 'PHP', symbol: '₱', name: 'Philippine Peso', flag: 'fi-ph' },
+            { code: 'KRW', symbol: '₩', name: 'South Korean Won', flag: 'fi-kr' },
+            { code: 'SGD', symbol: 'S$', name: 'Singapore Dollar', flag: 'fi-sg' },
+            { code: 'MYR', symbol: 'RM', name: 'Malaysian Ringgit', flag: 'fi-my' }
+        ];
+
+        // ============================================
+        // CALCULATOR
+        // ============================================
+        const calculator = {
+            display: '0',
+            history: '',
+            firstOperand: null,
+            operator: null,
+            waitingForSecondOperand: false
+        };
+
+        function resetCalculator() {
+            calculator.display = '0';
+            calculator.history = '';
+            calculator.firstOperand = null;
+            calculator.operator = null;
+            calculator.waitingForSecondOperand = false;
+            updateCalculatorDisplay();
+        }
+
+        function inputDigit(digit) {
+            const { display, waitingForSecondOperand } = calculator;
+            
+            if (waitingForSecondOperand) {
+                calculator.display = digit;
+                calculator.waitingForSecondOperand = false;
+            } else {
+                calculator.display = display === '0' ? digit : display + digit;
+            }
+        }
+
+        function handleCalculatorAction(action) {
+            const { display, firstOperand, operator } = calculator;
+            const inputValue = parseFloat(display);
+            
+            switch (action) {
+                case 'clear':
+                    resetCalculator();
+                    break;
+                case 'clear-entry':
+                    calculator.display = '0';
+                    break;
+                case 'backspace':
+                    calculator.display = display.length > 1 ? display.slice(0, -1) : '0';
+                    break;
+                case 'negate':
+                    if (display !== '0') calculator.display = String(-parseFloat(display));
+                    break;
+                case '.':
+                    if (!display.includes('.')) calculator.display += '.';
+                    break;
+                case '=':
+                    if (firstOperand !== null && operator) {
+                        const result = calculate(firstOperand, inputValue, operator);
+                        calculator.history = `${firstOperand} ${getOperatorSymbol(operator)} ${inputValue} =`;
+                        calculator.display = String(result);
+                        calculator.firstOperand = null;
+                        calculator.operator = null;
+                        calculator.waitingForSecondOperand = true;
+                    }
+                    break;
+                default:
+                    if (firstOperand === null) {
+                        calculator.firstOperand = inputValue;
+                    } else if (operator) {
+                        const result = calculate(firstOperand, inputValue, operator);
+                        calculator.display = String(result);
+                        calculator.firstOperand = result;
+                    }
+                    calculator.operator = action;
+                    calculator.history = `${calculator.firstOperand} ${getOperatorSymbol(action)}`;
+                    calculator.waitingForSecondOperand = true;
+                    break;
+            }
+        }
+
+        function calculate(first, second, operator) {
+            switch (operator) {
+                case '+': return first + second;
+                case '-': return first - second;
+                case '*': return first * second;
+                case '/': 
+                    if (second === 0) {
+                        alert('Cannot divide by zero');
+                        return first;
+                    }
+                    return first / second;
+                default: return second;
+            }
+        }
+
+        function getOperatorSymbol(operator) {
+            switch (operator) {
+                case '+': return '+';
+                case '-': return '-';
+                case '*': return '×';
+                case '/': return '÷';
+                default: return operator;
+            }
+        }
+
+        function updateCalculatorDisplay() {
+            document.getElementById('calcDisplay').textContent = calculator.display;
+            document.getElementById('calcHistory').textContent = calculator.history;
+        }
+
+        function initCalculator() {
+            document.querySelectorAll('.calc-btn').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    if (this.dataset.number) {
+                        inputDigit(this.dataset.number);
+                    } else if (this.dataset.action) {
+                        handleCalculatorAction(this.dataset.action);
+                    }
+                    updateCalculatorDisplay();
+                });
+            });
+
+            document.getElementById('backFromCalcBtn').addEventListener('click', function(e) {
+                e.preventDefault();
+                showPage('dashboard');
+            });
+        }
+
+        // ============================================
+        // NOTES
+        // ============================================
+        const notesState = {
+            notes: [],
+            notesEditor: {
+                history: [],
+                currentHistoryIndex: -1,
+                currentNote: null
+            }
+        };
+
+        function showNotesHistory() {
+            document.getElementById('notesHistoryPage').classList.remove('hidden');
+            document.getElementById('notesEditorPage').classList.remove('active');
+            loadNotesList();
+        }
+
+        function showNoteEditor(noteIndex = null) {
+            document.getElementById('notesHistoryPage').classList.add('hidden');
+            document.getElementById('notesEditorPage').classList.add('active');
+            
+            notesState.notesEditor.history = [];
+            notesState.notesEditor.currentHistoryIndex = -1;
+            
+            if (noteIndex !== null && notesState.notes[noteIndex]) {
+                notesState.notesEditor.currentNote = { index: noteIndex, ...notesState.notes[noteIndex] };
+                document.getElementById('noteTitleInput').value = notesState.notes[noteIndex].title || '';
+                document.getElementById('notesEditor').innerHTML = notesState.notes[noteIndex].content;
+            } else {
+                notesState.notesEditor.currentNote = null;
+                document.getElementById('noteTitleInput').value = '';
+                document.getElementById('notesEditor').innerHTML = '';
+            }
+            
+            setTimeout(() => {
+                document.getElementById('noteTitleInput').focus();
+            }, 100);
+            
+            saveNoteEditorState();
+        }
+
+        function saveNoteEditorState() {
+            const stateObj = {
+                title: document.getElementById('noteTitleInput').value,
+                content: document.getElementById('notesEditor').innerHTML
+            };
+            
+            if (notesState.notesEditor.currentHistoryIndex < notesState.notesEditor.history.length - 1) {
+                notesState.notesEditor.history = notesState.notesEditor.history.slice(0, notesState.notesEditor.currentHistoryIndex + 1);
+            }
+            
+            notesState.notesEditor.history.push(stateObj);
+            notesState.notesEditor.currentHistoryIndex++;
+            
+            if (notesState.notesEditor.history.length > 50) {
+                notesState.notesEditor.history.shift();
+                notesState.notesEditor.currentHistoryIndex--;
+            }
+        }
+
+        function undoNoteEdit() {
+            if (notesState.notesEditor.currentHistoryIndex > 0) {
+                notesState.notesEditor.currentHistoryIndex--;
+                const prevState = notesState.notesEditor.history[notesState.notesEditor.currentHistoryIndex];
+                document.getElementById('noteTitleInput').value = prevState.title;
+                document.getElementById('notesEditor').innerHTML = prevState.content;
+            }
+        }
+
+        function redoNoteEdit() {
+            if (notesState.notesEditor.currentHistoryIndex < notesState.notesEditor.history.length - 1) {
+                notesState.notesEditor.currentHistoryIndex++;
+                const nextState = notesState.notesEditor.history[notesState.notesEditor.currentHistoryIndex];
+                document.getElementById('noteTitleInput').value = nextState.title;
+                document.getElementById('notesEditor').innerHTML = nextState.content;
+            }
+        }
+
+        function saveNoteFromEditor() {
+            const title = document.getElementById('noteTitleInput').value.trim();
+            const content = document.getElementById('notesEditor').innerHTML.trim();
+            
+            if (!title && !content) {
+                alert('Please add a title or content to your note');
+                return;
+            }
+            
+            const note = {
+                title: title || 'Untitled Note',
+                content: content,
+                date: new Date().toLocaleDateString('en-US', { 
+                    year: 'numeric', 
+                    month: 'short', 
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                })
+            };
+            
+            if (notesState.notesEditor.currentNote !== null) {
+                notesState.notes[notesState.notesEditor.currentNote.index] = note;
+            } else {
+                notesState.notes.unshift(note);
+            }
+            
+            if (notesState.notes.length > 50) notesState.notes.pop();
+            saveNotesToStorage();
+            showNotesHistory();
+            alert('Note saved successfully!');
+        }
+
+        function loadNotesList() {
+            const container = document.getElementById('notesList');
+            if (notesState.notes.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 40px 20px;">No notes yet. Click "Add New Note" to create your first note!</p>';
+                return;
+            }
+            
+            let html = '<h4 style="margin-bottom: 15px; color: var(--primary-color);">Your Notes</h4>';
+            notesState.notes.forEach((note, index) => {
+                const preview = note.content.replace(/<[^>]*>/g, '').substring(0, 100);
+                html += `
+                    <div class="note-item" onclick="editNote(${index})">
+                        <div class="note-header">
+                            <div class="note-title">${note.title}</div>
+                            <div class="note-date">${note.date}</div>
+                        </div>
+                        <div class="note-content">${preview}${note.content.replace(/<[^>]*>/g, '').length > 100 ? '...' : ''}</div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        window.editNote = function(index) {
+            showNoteEditor(index);
+        };
+
+        window.deleteNote = function(index, event) {
+            event.stopPropagation();
+            if (confirm('Delete this note?')) {
+                notesState.notes.splice(index, 1);
+                saveNotesToStorage();
+                loadNotesList();
+            }
+        };
+
+        function saveNotesToStorage() {
+            try {
+                localStorage.setItem('budgetFlowNotes', JSON.stringify(notesState.notes));
+            } catch (e) {
+                console.error('Failed to save notes to localStorage:', e);
+            }
+        }
+
+        function loadNotesFromStorage() {
+            try {
+                const saved = localStorage.getItem('budgetFlowNotes');
+                if (saved) {
+                    notesState.notes = JSON.parse(saved);
+                }
+            } catch (e) {
+                console.error('Failed to load notes from localStorage:', e);
+            }
+        }
+
+        function initNotes() {
+            loadNotesFromStorage();
+            
+            document.getElementById('addNoteBtn').addEventListener('click', function(e) {
+                e.preventDefault();
+                showNoteEditor();
+            });
+            
+            document.getElementById('backToNotesHistoryBtn').addEventListener('click', function(e) {
+                e.preventDefault();
+                showNotesHistory();
+            });
+            
+            document.getElementById('saveNoteEditorBtn').addEventListener('click', function(e) {
+                e.preventDefault();
+                saveNoteFromEditor();
+            });
+            
+            document.getElementById('undoBtn').addEventListener('click', function(e) {
+                e.preventDefault();
+                undoNoteEdit();
+            });
+            
+            document.getElementById('redoBtn').addEventListener('click', function(e) {
+                e.preventDefault();
+                redoNoteEdit();
+            });
+            
+            document.getElementById('backFromNotesBtn').addEventListener('click', function(e) {
+                e.preventDefault();
+                showPage('dashboard');
+            });
+            
+            document.addEventListener('keydown', function(e) {
+                if (state.currentPage === 'notes' && document.getElementById('notesEditorPage').classList.contains('active')) {
+                    if (e.ctrlKey || e.metaKey) {
+                        if (e.key === 'z' && !e.shiftKey) {
+                            e.preventDefault();
+                            undoNoteEdit();
+                        } else if ((e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+                            e.preventDefault();
+                            redoNoteEdit();
+                        }
+                    }
+                }
+            });
+        }
+
+        // ============================================
+        // EXPENSES TRACKER
+        // ============================================
+        const expenseCategories = {
+            food: { name: "Food", icon: "fas fa-utensils", color: "#ef4444" },
+            transport: { name: "Transportation", icon: "fas fa-bus", color: "#3b82f6" },
+            shopping: { name: "Shopping", icon: "fas fa-shopping-bag", color: "#8b5cf6" },
+            health: { name: "Health", icon: "fas fa-heartbeat", color: "#10b981" },
+            entertainment: { name: "Entertainment", icon: "fas fa-film", color: "#f59e0b" },
+            other: { name: "Other", icon: "fas fa-ellipsis-h", color: "#6366f1" }
+        };
+
+        const expensesTracker = {
+            currentBalance: 0,
+            expenses: [],
+            incomeEntries: []
+        };
+
+        function updateExpensesTracker() {
+            document.getElementById('currentBalance').textContent = formatCurrency(expensesTracker.currentBalance);
+            loadExpensesList();
+        }
+
+        function setStartingBalance() {
+            const input = document.getElementById('startingBalanceInput');
+            const amount = parseFloat(input.value) || 0;
+            
+            if (amount < 0) {
+                alert('Starting balance cannot be negative');
+                return;
+            }
+            
+            expensesTracker.currentBalance = amount;
+            expensesTracker.expenses = [];
+            expensesTracker.incomeEntries = [];
+            
+            if (amount > 0) {
+                expensesTracker.incomeEntries.push({
+                    amount: amount,
+                    description: 'Starting Balance',
+                    date: new Date().toLocaleDateString('en-US', { 
+                        month: 'short', 
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    })
+                });
+            }
+            
+            saveExpensesToStorage();
+            updateExpensesTracker();
+            alert('Starting balance set successfully!');
+        }
+
+        function showExpenseInput(category) {
+            const categoryInfo = expenseCategories[category];
+            document.getElementById('selectedCategoryTitle').textContent = `Add ${categoryInfo.name} Expense`;
+            document.getElementById('expenseAmountInput').value = '';
+            document.getElementById('expenseDescription').value = '';
+            document.getElementById('expenseInputSection').style.display = 'block';
+            
+            document.getElementById('expenseInputSection').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function hideExpenseInput() {
+            document.getElementById('expenseInputSection').style.display = 'none';
+        }
+
+        function addExpense() {
+            const amount = parseFloat(document.getElementById('expenseAmountInput').value) || 0;
+            const description = document.getElementById('expenseDescription').value.trim();
+            const category = document.getElementById('selectedCategoryTitle').textContent.replace('Add ', '').replace(' Expense', '').toLowerCase();
+            
+            if (amount <= 0) {
+                alert('Please enter a valid expense amount');
+                return;
+            }
+            
+            if (amount > expensesTracker.currentBalance) {
+                alert('Expense amount exceeds current balance');
+                return;
+            }
+            
+            const expense = {
+                id: Date.now(),
+                amount: amount,
+                description: description || expenseCategories[category].name,
+                category: category,
+                date: new Date().toLocaleDateString('en-US', { 
+                    month: 'short', 
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                })
+            };
+            
+            expensesTracker.expenses.unshift(expense);
+            expensesTracker.currentBalance -= amount;
+            
+            saveExpensesToStorage();
+            updateExpensesTracker();
+            hideExpenseInput();
+            
+            document.getElementById('expenseAmountInput').value = '';
+            document.getElementById('expenseDescription').value = '';
+        }
+
+        function addIncome() {
+            const amount = parseFloat(document.getElementById('incomeAmountInput').value) || 0;
+            const description = document.getElementById('incomeDescription').value.trim();
+            
+            if (amount <= 0) {
+                alert('Please enter a valid income amount');
+                return;
+            }
+            
+            const incomeEntry = {
+                amount: amount,
+                description: description || 'Additional Income',
+                date: new Date().toLocaleDateString('en-US', { 
+                    month: 'short', 
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                })
+            };
+            
+            expensesTracker.incomeEntries.push(incomeEntry);
+            expensesTracker.currentBalance += amount;
+            
+            saveExpensesToStorage();
+            updateExpensesTracker();
+            
+            document.getElementById('incomeAmountInput').value = '';
+            document.getElementById('incomeDescription').value = '';
+            
+            alert('Income added successfully!');
+        }
+
+        function loadExpensesList() {
+            const container = document.getElementById('expensesList');
+            if (expensesTracker.expenses.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 20px;">No expenses recorded yet</p>';
+                return;
+            }
+            
+            let html = '<h3 style="margin: 20px 0 10px; color: var(--primary-color);">Recent Expenses</h3>';
+            expensesTracker.expenses.slice(0, 10).forEach(expense => {
+                const categoryInfo = expenseCategories[expense.category] || expenseCategories.other;
+                html += `
+                    <div class="expense-item">
+                        <div class="expense-info">
+                            <div>
+                                <span class="expense-category-badge">${categoryInfo.name}</span>
+                                <span style="font-weight: 600; color: var(--text-color);">${expense.description}</span>
+                            </div>
+                            <div class="expense-date">${expense.date}</div>
+                        </div>
+                        <div class="expense-amount">-${formatCurrency(expense.amount)}</div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        function saveExpensesToStorage() {
+            try {
+                localStorage.setItem('budgetFlowExpenses', JSON.stringify(expensesTracker));
+            } catch (e) {
+                console.error('Failed to save expenses to localStorage:', e);
+            }
+        }
+
+        function loadExpensesFromStorage() {
+            try {
+                const saved = localStorage.getItem('budgetFlowExpenses');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    Object.assign(expensesTracker, parsed);
+                }
+            } catch (e) {
+                console.error('Failed to load expenses from localStorage:', e);
+            }
+        }
+
+        function initExpenses() {
+            loadExpensesFromStorage();
+            
+            document.getElementById('setBalanceBtn').addEventListener('click', function(e) {
+                e.preventDefault();
+                setStartingBalance();
+            });
+            
+            document.getElementById('addIncomeBtn').addEventListener('click', function(e) {
+                e.preventDefault();
+                addIncome();
+            });
+            
+            document.getElementById('addExpenseBtn').addEventListener('click', function(e) {
+                e.preventDefault();
+                addExpense();
+            });
+            
+            document.getElementById('cancelExpenseBtn').addEventListener('click', function(e) {
+                e.preventDefault();
+                hideExpenseInput();
+            });
+            
+            document.querySelectorAll('.expense-category').forEach(category => {
+                category.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const categoryType = this.dataset.category;
+                    showExpenseInput(categoryType);
+                });
+            });
+            
+            document.getElementById('backFromExpensesBtn').addEventListener('click', function(e) {
+                e.preventDefault();
+                showPage('dashboard');
+            });
+        }
+
+        // ============================================
+        // ANALYTICS
+        // ============================================
+        window.expensePieChart = null;
+        window.budgetBarChart = null;
+        window.balanceLineChart = null;
+
+        function showAnalytics() {
+            showPage('analytics');
+            
+            if (state.history.length === 0) {
+                document.getElementById('noDataMessage').style.display = 'block';
+                document.getElementById('analyticsContent').style.display = 'none';
+                return;
+            }
+            
+            document.getElementById('noDataMessage').style.display = 'none';
+            document.getElementById('analyticsContent').style.display = 'block';
+            
+            const latest = state.history[0];
+            const expenses = latest.expenses || [];
+            const totalExpenses = latest.totalExpenses || 0;
+            const remaining = latest.balance || 0;
+            const income = latest.income || 0;
+            const savingsRate = income > 0 ? ((remaining / income) * 100).toFixed(1) : 0;
+            
+            document.getElementById('analyticsIncome').textContent = formatCurrency(income);
+            document.getElementById('analyticsExpenses').textContent = formatCurrency(totalExpenses);
+            document.getElementById('analyticsRemaining').textContent = formatCurrency(remaining);
+            document.getElementById('analyticsRemaining').className = `analytics-summary-value ${remaining >= 0 ? 'positive' : 'negative'}`;
+            document.getElementById('analyticsSavingsRate').textContent = savingsRate + '%';
+            document.getElementById('analyticsSavingsRate').className = `analytics-summary-value ${remaining >= 0 ? 'positive' : 'negative'}`;
+            
+            const expenseLabels = expenses.map(exp => {
+                const name = exp.name.replace(/_/g, ' ');
+                return name.charAt(0).toUpperCase() + name.slice(1);
+            });
+            const expenseAmounts = expenses.map(exp => exp.amount);
+            
+            const topExpensesContainer = document.getElementById('topExpensesList');
+            if (expenses.length > 0) {
+                const sortedExpenses = [...expenses].sort((a, b) => b.amount - a.amount).slice(0, 5);
+                let html = '';
+                sortedExpenses.forEach((exp, index) => {
+                    const name = exp.name.replace(/_/g, ' ');
+                    const percentage = income > 0 ? ((exp.amount / income) * 100).toFixed(1) : 0;
+                    html += `
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: rgba(22, 163, 74, 0.05); border-radius: var(--border-radius); margin-bottom: 8px;">
+                            <div>
+                                <div style="font-weight: 600; color: var(--text-color);">${name.charAt(0).toUpperCase() + name.slice(1)}</div>
+                                <div style="font-size: 12px; color: var(--text-secondary);">${percentage}% of income</div>
+                            </div>
+                            <div style="font-weight: 700; color: var(--primary-color);">${formatCurrency(exp.amount)}</div>
+                        </div>
+                    `;
+                });
+                topExpensesContainer.innerHTML = html;
+            } else {
+                topExpensesContainer.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 20px;">No expense data</p>';
+            }
+            
+            if (window.expensePieChart) window.expensePieChart.destroy();
+            if (window.budgetBarChart) window.budgetBarChart.destroy();
+            if (window.balanceLineChart) window.balanceLineChart.destroy();
+            
+            const pieCtx = document.getElementById('expensePieChart').getContext('2d');
+            window.expensePieChart = new Chart(pieCtx, {
+                type: 'pie',
+                data: {
+                    labels: expenseLabels,
+                    datasets: [{
+                        data: expenseAmounts,
+                        backgroundColor: [
+                            'rgba(22, 163, 74, 0.8)',
+                            'rgba(59, 130, 246, 0.8)',
+                            'rgba(139, 92, 246, 0.8)',
+                            'rgba(239, 68, 68, 0.8)',
+                            'rgba(245, 158, 11, 0.8)',
+                            'rgba(16, 185, 129, 0.8)',
+                            'rgba(236, 72, 153, 0.8)',
+                            'rgba(99, 102, 241, 0.8)'
+                        ],
+                        borderColor: getComputedStyle(document.documentElement).getPropertyValue('--card-bg').trim(),
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                color: getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim(),
+                                font: {
+                                    size: 11
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => {
+                                    const label = context.label || '';
+                                    const value = context.raw || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                                    return `${label}: ${formatCurrency(value)} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            const barCtx = document.getElementById('budgetBarChart').getContext('2d');
+            window.budgetBarChart = new Chart(barCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Income', 'Expenses', 'Remaining'],
+                    datasets: [{
+                        data: [income, totalExpenses, remaining],
+                        backgroundColor: [
+                            'rgba(16, 185, 129, 0.8)',
+                            'rgba(239, 68, 68, 0.8)',
+                            remaining >= 0 ? 'rgba(59, 130, 246, 0.8)' : 'rgba(245, 158, 11, 0.8)'
+                        ],
+                        borderColor: getComputedStyle(document.documentElement).getPropertyValue('--card-bg').trim(),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                color: getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim(),
+                                callback: (value) => formatCurrency(value)
+                            },
+                            grid: {
+                                color: state.darkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim()
+                            },
+                            grid: {
+                                color: state.darkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => formatCurrency(context.raw)
+                            }
+                        }
+                    }
+                }
+            });
+            
+            const historyReversed = [...state.history].reverse();
+            const lineCtx = document.getElementById('balanceLineChart').getContext('2d');
+            window.balanceLineChart = new Chart(lineCtx, {
+                type: 'line',
+                data: {
+                    labels: historyReversed.map(entry => {
+                        const date = new Date(entry.date);
+                        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    }),
+                    datasets: [{
+                        label: 'Remaining Balance',
+                        data: historyReversed.map(entry => entry.balance),
+                        borderColor: state.primaryColor,
+                        backgroundColor: 'rgba(22, 163, 74, 0.2)',
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: state.primaryColor,
+                        pointBorderColor: getComputedStyle(document.documentElement).getPropertyValue('--card-bg').trim(),
+                        pointBorderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            ticks: {
+                                color: getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim(),
+                                callback: (value) => formatCurrency(value)
+                            },
+                            grid: {
+                                color: state.darkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim(),
+                                maxTicksLimit: 6
+                            },
+                            grid: {
+                                color: state.darkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim()
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => formatCurrency(context.raw)
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // ============================================
+        // MAIN APP LOGIC
+        // ============================================
+        const state = {
+            currentPage: 'dashboard',
+            userType: '',
+            businessType: '',
+            income: 0,
+            expenses: [],
+            additionalExpenses: [],
+            currentQuestion: 0,
+            daysInMonth: 30,
+            currencySymbol: '$',
+            history: [],
+            darkMode: false,
+            primaryColor: '#16a34a',
+            schoolDaysPerWeek: 5,
+            numKids: 0,
+            kidsSchool: false,
+            kidExpenses: [],
+            addMore: false,
+            customName: ''
+        };
+
+        window.state = state;
+
+        const pages = {
+            dashboard: document.getElementById('dashboardPage'),
+            userType: document.getElementById('userTypePage'),
+            businessCategory: document.getElementById('businessCategoryPage'),
+            question: document.getElementById('questionPage'),
+            result: document.getElementById('resultPage'),
+            calculator: document.getElementById('calculatorPage'),
+            notes: document.getElementById('notesPage'),
+            expenses: document.getElementById('expensesPage'),
+            analytics: document.getElementById('analyticsPage')
+        };
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadFromLocalStorage();
+            setupEventListeners();
+            initializeAllModules();
+            initializeApp();
+            updateCurrentDate();
+            updateDashboard();
+        });
+
+        function initializeApp() {
+            document.getElementById('themeToggle').checked = state.darkMode;
+            applyDarkMode(state.darkMode);
+            document.getElementById('daysInMonth').value = state.daysInMonth;
+            applyThemeColor(state.primaryColor);
+            populateCurrencySelector();
+            updateEmoji();
+        }
+
+        function setupEventListeners() {
+            document.getElementById('logoBtn').addEventListener('click', function(e) {
+                e.preventDefault();
+                showPage('dashboard');
+            });
+            
+            document.getElementById('menuBtn').addEventListener('click', openMenu);
+            document.getElementById('closeMenuBtn').addEventListener('click', closeMenu);
+            document.getElementById('menuOverlay').addEventListener('click', closeMenu);
+
+            document.getElementById('startBudgetBtn').addEventListener('click', function(e) {
+                e.preventDefault();
+                resetBudgetState();
+                showPage('userType');
+            });
+            
+            document.getElementById('analyticsBtn').addEventListener('click', function(e) {
+                e.preventDefault();
+                showAnalytics();
+            });
+
+            document.getElementById('calculatorBtn').addEventListener('click', function(e) {
+                e.preventDefault();
+                showPage('calculator');
+                resetCalculator();
+            });
+            
+            document.getElementById('notesBtn').addEventListener('click', function(e) {
+                e.preventDefault();
+                showPage('notes');
+                showNotesHistory();
+                loadNotesList();
+            });
+            
+            document.getElementById('expensesBtn').addEventListener('click', function(e) {
+                e.preventDefault();
+                showPage('expenses');
+                updateExpensesTracker();
+            });
+
+            document.querySelectorAll('#userTypePage .user-type-btn').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    document.querySelectorAll('#userTypePage .user-type-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    state.userType = this.dataset.type;
+                });
+            });
+
+            document.querySelectorAll('#businessCategoryPage .business-category-btn').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    document.querySelectorAll('#businessCategoryPage .business-category-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    state.businessType = this.dataset.category;
+                });
+            });
+
+            document.getElementById('nextToBusinessBtn').addEventListener('click', function(e) {
+                e.preventDefault();
+                if (!state.userType) {
+                    alert('Please select a profile type');
+                    return;
+                }
+                
+                if (state.userType === 'business' || state.userType === 'freelancer') {
+                    showPage('businessCategory');
+                    if (state.userType === 'freelancer') {
+                        document.querySelector('#businessCategoryPage .card h2').textContent = 'Freelance Category';
+                        document.querySelector('#businessCategoryPage .card p').textContent = 'Select your freelance field';
+                        const optionsContainer = document.querySelector('#businessCategoryPage .business-category-options');
+                        optionsContainer.innerHTML = '';
+                        const freelanceCategories = [
+                            {category: 'writing', label: 'Writing/Content'},
+                            {category: 'design', label: 'Design/Creative'},
+                            {category: 'development', label: 'Development/Tech'},
+                            {category: 'marketing', label: 'Marketing/SEO'},
+                            {category: 'administrative', label: 'Administrative/VA'},
+                            {category: 'finance', label: 'Finance/Bookkeeping'},
+                            {category: 'consulting', label: 'Consulting/Management'},
+                            {category: 'education', label: 'Education/Tutoring'},
+                            {category: 'other', label: 'Other', span: 2}
+                        ];
+                        freelanceCategories.forEach(cat => {
+                            const btn = document.createElement('div');
+                            btn.className = 'business-category-btn';
+                            btn.dataset.category = cat.category;
+                            btn.textContent = cat.label;
+                            if (cat.span) btn.style.gridColumn = 'span 2';
+                            optionsContainer.appendChild(btn);
+                            btn.addEventListener('click', function() {
+                                document.querySelectorAll('#businessCategoryPage .business-category-btn').forEach(b => b.classList.remove('active'));
+                                this.classList.add('active');
+                                state.businessType = this.dataset.category;
+                            });
+                        });
+                    }
+                } else {
+                    startQuestions();
+                }
+            });
+
+            document.getElementById('startQuestionsBtn').addEventListener('click', function(e) {
+                e.preventDefault();
+                if (!state.businessType && (state.userType === 'business' || state.userType === 'freelancer')) {
+                    alert('Please select a category');
+                    return;
+                }
+                startQuestions();
+            });
+
+            document.getElementById('backToDashboardBtn').addEventListener('click', function(e) {
+                e.preventDefault();
+                showPage('dashboard');
+            });
+            
+            document.getElementById('backToUserTypeBtn').addEventListener('click', function(e) {
+                e.preventDefault();
+                showPage('userType');
+            });
+            
+            document.getElementById('backFromAnalyticsBtn').addEventListener('click', function(e) {
+                e.preventDefault();
+                showPage('dashboard');
+            });
+
+            document.getElementById('prevBtn').addEventListener('click', function(e) {
+                e.preventDefault();
+                prevQuestion();
+            });
+            
+            document.getElementById('nextBtn').addEventListener('click', function(e) {
+                e.preventDefault();
+                nextQuestion();
+            });
+
+            document.querySelectorAll('.keypad-btn').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    if (this.id === 'backspaceBtn') {
+                        handleKeypadBackspace();
+                    } else if (this.id === 'clearBtn') {
+                        document.getElementById('expenseAmount').value = '0';
+                    } else {
+                        const key = this.dataset.key;
+                        handleKeypadInput(key);
+                    }
+                    updateLiveBalance();
+                });
+            });
+
+            document.addEventListener('click', function(e) {
+                if (e.target.classList.contains('frequency-btn')) {
+                    e.preventDefault();
+                    document.querySelectorAll('.frequency-btn').forEach(btn => btn.classList.remove('active'));
+                    e.target.classList.add('active');
+                    updateLiveBalance();
+                }
+            });
+
+            document.getElementById('finishBtn').addEventListener('click', function(e) {
+                e.preventDefault();
+                showPage('dashboard');
+                updateDashboard();
+            });
+
+            document.getElementById('daysInMonth').addEventListener('change', function() {
+                state.daysInMonth = parseInt(this.value) || 30;
+                saveToLocalStorage();
+            });
+            
+            document.getElementById('themeToggle').addEventListener('change', function() {
+                state.darkMode = this.checked;
+                applyDarkMode(state.darkMode);
+                saveToLocalStorage();
+            });
+            
+            document.querySelectorAll('.theme-color').forEach(color => {
+                color.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const colorValue = this.dataset.color;
+                    applyThemeColor(colorValue);
+                    saveToLocalStorage();
+                });
+            });
+            
+            document.getElementById('clearHistoryBtn').addEventListener('click', function(e) {
+                e.preventDefault();
+                if (confirm('Clear all budget history?')) {
+                    state.history = [];
+                    saveToLocalStorage();
+                    updateDashboard();
+                }
+            });
+
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const page = this.dataset.page;
+                    showPage(page);
+                    
+                    document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    if (page === 'calculator') {
+                        resetCalculator();
+                    } else if (page === 'notes') {
+                        showNotesHistory();
+                        loadNotesList();
+                    } else if (page === 'expenses') {
+                        updateExpensesTracker();
+                    } else if (page === 'analytics') {
+                        showAnalytics();
+                    }
+                });
+            });
+        }
+
+        function showPage(pageName) {
+            Object.values(pages).forEach(page => page.classList.remove('active'));
+            if (pages[pageName]) {
+                pages[pageName].classList.add('active');
+                state.currentPage = pageName;
+            }
+        }
+
+        function resetBudgetState() {
+            state.userType = '';
+            state.businessType = '';
+            state.income = 0;
+            state.expenses = [];
+            state.additionalExpenses = [];
+            state.currentQuestion = 0;
+            state.schoolDaysPerWeek = 5;
+            state.numKids = 0;
+            state.kidsSchool = false;
+            state.kidExpenses = [];
+            state.addMore = false;
+            state.customName = '';
+            
+            document.querySelectorAll('#userTypePage .user-type-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelectorAll('#businessCategoryPage .business-category-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+        }
+
+        function startQuestions() {
+            state.currentQuestion = 0;
+            state.income = 0;
+            state.expenses = [];
+            state.additionalExpenses = [];
+            state.schoolDaysPerWeek = 5;
+            state.numKids = 0;
+            state.kidsSchool = false;
+            state.kidExpenses = [];
+            state.addMore = false;
+            state.customName = '';
+            
+            let questionSet = (state.userType === 'business' || state.userType === 'freelancer') 
+                ? questions[state.userType][state.businessType || 'other']
+                : questions[state.userType];
+            
+            if (state.userType === 'parent') {
+                questionSet = [...questionSet];
+            }
+            
+            showPage('question');
+            loadQuestion(questionSet);
+            updateLiveBalance();
+        }
+
+        function loadQuestion(questionSet) {
+            const question = questionSet[state.currentQuestion];
+            const totalQuestions = questionSet.length;
+            document.getElementById('questionText').textContent = question.text;
+            document.getElementById('currentQuestion').textContent = state.currentQuestion + 1;
+            document.getElementById('totalQuestions').textContent = totalQuestions;
+            const progress = ((state.currentQuestion + 1) / totalQuestions) * 100;
+            document.getElementById('progressFill').style.width = progress + '%';
+            document.getElementById('expenseAmount').value = '0';
+            
+            const input = document.getElementById('expenseAmount');
+            const keypad = document.getElementById('numericKeypad');
+            const freqOptions = document.getElementById('frequencyOptions');
+            
+            if (question.type === 'number') {
+                input.type = 'number';
+                input.min = question.min;
+                input.max = question.max;
+                input.readonly = false;
+                keypad.style.display = 'none';
+                freqOptions.style.display = 'none';
+            } else if (question.type === 'yesno') {
+                keypad.style.display = 'none';
+                freqOptions.style.display = 'none';
+            } else if (question.key === 'custom_name') {
+                input.type = 'text';
+                input.readonly = false;
+                keypad.style.display = 'none';
+                freqOptions.style.display = 'none';
+            } else {
+                input.type = 'text';
+                input.readonly = true;
+                keypad.style.display = 'grid';
+                
+                if (question.nonMonetary) {
+                    freqOptions.style.display = 'none';
+                } else {
+                    freqOptions.style.display = 'flex';
+                }
+            }
+            
+            document.getElementById('prevBtn').style.display = state.currentQuestion === 0 ? 'none' : 'block';
+            document.getElementById('nextBtn').textContent = state.currentQuestion === totalQuestions - 1 ? 'Finish' : 'Next';
+        }
+
+        function handleKeypadInput(key) {
+            const input = document.getElementById('expenseAmount');
+            let value = input.value;
+            if (value === '0' || value === '') {
+                value = key;
+            } else {
+                if (key === '.' && value.includes('.')) return;
+                value += key;
+            }
+            input.value = value;
+        }
+
+        function handleKeypadBackspace() {
+            const input = document.getElementById('expenseAmount');
+            let value = input.value;
+            if (value.length > 1) {
+                value = value.slice(0, -1);
+            } else {
+                value = '0';
+            }
+            input.value = value;
+        }
+
+        function updateLiveBalance() {
+            const input = document.getElementById('expenseAmount');
+            const amount = parseFloat(input.value) || 0;
+            const freq = document.querySelector('.frequency-btn.active') ? document.querySelector('.frequency-btn.active').dataset.freq : 'monthly';
+            let monthly = amount;
+            if (freq === 'daily') monthly = amount * state.daysInMonth;
+            else if (freq === 'weekly') monthly = amount * 4;
+            
+            let questionSet = (state.userType === 'business' || state.userType === 'freelancer') 
+                ? questions[state.userType][state.businessType || 'other']
+                : questions[state.userType];
+            
+            const question = questionSet[state.currentQuestion];
+            let remaining = state.income;
+            
+            if (question.key === 'income') {
+                remaining = monthly;
+            } else if (question.nonMonetary) {
+                remaining = state.income;
+                state.expenses.forEach(exp => remaining -= exp.amount);
+                state.additionalExpenses.forEach(exp => remaining -= exp.amount);
+                state.kidExpenses.forEach(exp => remaining -= exp.amount);
+            } else {
+                state.expenses.forEach(exp => remaining -= exp.amount);
+                state.additionalExpenses.forEach(exp => remaining -= exp.amount);
+                state.kidExpenses.forEach(exp => remaining -= exp.amount);
+                
+                // ============ DAILY ADJUSTMENT FIX FOR FOOD AND TRANSPORT ============
+                // Only apply school days adjustment for DAILY frequency
+                if (state.userType === 'student' && (question.key === 'transport' || question.key === 'food')) {
+                    if (freq === 'daily') {
+                        monthly *= (state.schoolDaysPerWeek / 7);
+                    }
+                }
+                // ============ END OF FIX ============
+                
+                remaining -= monthly;
+            }
+            
+            const balanceEl = document.getElementById('liveBalance');
+            balanceEl.textContent = formatCurrency(remaining);
+            balanceEl.classList.toggle('live-balance-negative', remaining < 0);
+        }
+
+        function nextQuestion() {
+            const input = document.getElementById('expenseAmount');
+            let amount = parseFloat(input.value) || 0;
+            const questionSet = (state.userType === 'business' || state.userType === 'freelancer') 
+                ? questions[state.userType][state.businessType || 'other']
+                : questions[state.userType];
+            
+            const question = questionSet[state.currentQuestion];
+            const freq = document.querySelector('.frequency-btn.active') ? document.querySelector('.frequency-btn.active').dataset.freq : 'monthly';
+            let monthly = amount;
+            if (freq === 'daily') monthly = amount * state.daysInMonth;
+            else if (freq === 'weekly') monthly = amount * 4;
+            
+                      if (question.key === 'school_days') {
+                state.schoolDaysPerWeek = parseInt(amount) || 5;
+            } else if (question.key === 'num_kids') {
+                state.numKids = parseInt(amount) || 0;
+                // Validate number of kids
+                if (state.numKids < 0) {
+                    alert('Number of kids cannot be negative');
+                    return;
+                }
+            } else if (question.key === 'kids_in_school') {
+                const kidsInSchool = parseInt(amount) || 0;
+                // Validate kids in school doesn't exceed total kids
+                if (kidsInSchool > state.numKids) {
+                    alert(`Kids in school cannot exceed total kids (${state.numKids})`);
+                    return;
+                }
+                if (kidsInSchool > 0) {
+                    for (let i = 1; i <= kidsInSchool; i++) {
+                        questionSet.splice(state.currentQuestion + 1, 0, 
+                            { text: `For child ${i}: How much on tuition?`, key: `child${i}_tuition` },
+                            { text: `For child ${i}: How much on school supplies?`, key: `child${i}_supplies` },
+                            { text: `For child ${i}: How much on extracurricular activities?`, key: `child${i}_activities` },
+                            { text: `For child ${i}: How much on transportation to school?`, key: `child${i}_transport` }
+                        );
+                    }
+                }
+            } else if (question.key === 'income') {
+                state.income = monthly;
+            } else if (question.key.startsWith('child')) {
+                state.kidExpenses.push({ name: question.key, amount: monthly });
+            } else if (question.key === 'custom_name') {
+                state.customName = input.value.trim();
+                if (!state.customName) {
+                    alert('Please enter an expense name');
+                    return;
+                }
+                questionSet.splice(state.currentQuestion + 1, 0, { text: `How much on ${state.customName}?`, key: 'custom_amount' });
+            } else if (question.key === 'custom_amount') {
+                state.additionalExpenses.push({ name: state.customName, amount: monthly });
+                questionSet.splice(state.currentQuestion + 1, 0, { text: "Do you have any additional expenses? (Yes/No)", key: "add_more", type: "yesno" });
+            } else if (question.key === 'add_more') {
+                state.addMore = (input.value.toLowerCase() === 'yes');
+            } else if (!question.nonMonetary) {
+                // ============ DAILY ADJUSTMENT FIX FOR FOOD AND TRANSPORT ============
+                // Only apply school days adjustment for DAILY frequency
+                if (state.userType === 'student' && (question.key === 'transport' || question.key === 'food')) {
+                    if (freq === 'daily') {
+                        monthly *= (state.schoolDaysPerWeek / 7);
+                    }
+                }
+                // ============ END OF FIX ============
+                state.expenses.push({ name: question.key, amount: monthly });
+            }
+            
+            if (state.currentQuestion < questionSet.length - 1) {
+                state.currentQuestion++;
+                loadQuestion(questionSet);
+                updateLiveBalance();
+            } else if (state.addMore) {
+                state.addMore = false;
+                questionSet.push({ text: "Enter expense name:", key: "custom_name", type: "text" });
+                state.currentQuestion++;
+                loadQuestion(questionSet);
+            } else {
+                showResults();
+            }
+        }
+
+        function prevQuestion() {
+            if (state.currentQuestion > 0) {
+                const questionSet = (state.userType === 'business' || state.userType === 'freelancer') 
+                    ? questions[state.userType][state.businessType || 'other']
+                    : questions[state.userType];
+                
+                const prevQuestion = questionSet[state.currentQuestion - 1];
+                
+                if (!prevQuestion.nonMonetary && prevQuestion.key !== 'income') {
+                    state.expenses.pop();
+                }
+                
+                if (prevQuestion.key === 'kids_in_school') {
+                    const kidsInSchool = parseInt(document.getElementById('expenseAmount').value) || 0;
+                    questionSet.splice(state.currentQuestion, kidsInSchool * 4);
+                }
+                
+                state.currentQuestion--;
+                loadQuestion(questionSet);
+                updateLiveBalance();
+            }
+        }
+
+        function showResults() {
+            let allExpenses = [...state.expenses, ...state.additionalExpenses, ...state.kidExpenses];
+            const totalExpenses = allExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+            const remaining = state.income - totalExpenses;
+            
+            document.getElementById('resultProfile').textContent = state.userType.charAt(0).toUpperCase() + state.userType.slice(1);
+            document.getElementById('resultBusiness').textContent = state.businessType || 'N/A';
+            document.getElementById('totalExpenses').textContent = formatCurrency(totalExpenses);
+            document.getElementById('remainingBalance').textContent = formatCurrency(remaining);
+            
+            const historyEntry = {
+                date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+                profile: state.userType,
+                business: state.businessType,
+                income: state.income,
+                expenses: allExpenses,
+                totalExpenses: totalExpenses,
+                balance: remaining
+            };
+            
+            state.history.unshift(historyEntry);
+            if (state.history.length > 50) state.history.pop();
+            saveToLocalStorage();
+            updateDashboard();
+            showPage('result');
+        }
+
+        function updateDashboard() {
+            if (state.history.length > 0) {
+                const latest = state.history[0];
+                document.getElementById('dashboardBalance').textContent = formatCurrency(latest.balance);
+                document.getElementById('historyCount').textContent = state.history.length;
+                document.getElementById('headerBalance').textContent = formatCurrency(latest.balance);
+                updateEmoji(latest.balance);
+                updateHistoryList();
+            } else {
+                document.getElementById('dashboardBalance').textContent = '$0';
+                document.getElementById('historyCount').textContent = '0';
+                document.getElementById('headerBalance').textContent = '$0';
+                updateEmoji(0);
+                document.getElementById('historyList').innerHTML = '<p style="color: var(--text-secondary); text-align: center; font-style: italic; font-size: 13px;">No budget history yet</p>';
+            }
+        }
+
+        function updateHistoryList() {
+            const container = document.getElementById('historyList');
+            if (state.history.length === 0) {
+                container.innerHTML = '<p style="color: var(--text-secondary); text-align: center; font-style: italic; font-size: 13px;">No budget history yet</p>';
+                return;
+            }
+            let html = '';
+            state.history.slice(0, 10).forEach(entry => {
+                html += `
+                    <div class="history-item">
+                        <div class="history-date">${entry.date}</div>
+                        <div class="history-details">
+                            ${entry.profile.charAt(0).toUpperCase() + entry.profile.slice(1)}
+                            ${entry.business && entry.business !== 'N/A' ? ` • ${entry.business}` : ''}
+                            • Balance: <strong style="color: ${entry.balance < 0 ? '#ef4444' : (entry.balance > 0 ? state.primaryColor : '#f59e0b')}">
+                                ${formatCurrency(entry.balance)}
+                            </strong>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        function updateCurrentDate() {
+            const now = new Date();
+            const options = { month: 'short', day: 'numeric' };
+            document.getElementById('currentDate').textContent = now.toLocaleDateString('en-US', options);
+        }
+
+        function updateEmoji(balance = 0) {
+            const headerEmoji = document.getElementById('headerEmoji');
+            headerEmoji.classList.remove('happy', 'neutral', 'sad');
+            if (balance > 0) headerEmoji.classList.add('happy');
+            else if (balance < 0) headerEmoji.classList.add('sad');
+            else headerEmoji.classList.add('neutral');
+        }
+
+        function formatCurrency(amount) {
+            const formatted = Math.abs(amount).toFixed(2);
+            const sign = amount < 0 ? '-' : '';
+            return sign + state.currencySymbol + formatted;
+        }
+
+        function populateCurrencySelector() {
+            const container = document.getElementById('currencySelector');
+            container.innerHTML = '';
+            
+            currencies.forEach(currency => {
+                const option = document.createElement('div');
+                option.className = `currency-option ${state.currencySymbol === currency.symbol ? 'active' : ''}`;
+                option.dataset.code = currency.code;
+                option.dataset.symbol = currency.symbol;
+                
+                option.innerHTML = `
+                    <span class="currency-flag fi ${currency.flag}"></span>
+                    <span class="currency-symbol">${currency.symbol}</span>
+                    <span style="font-size: 10px; margin-top: 2px;">${currency.code}</span>
+                `;
+                
+                option.addEventListener('click', () => {
+                    document.querySelectorAll('.currency-option').forEach(opt => opt.classList.remove('active'));
+                    option.classList.add('active');
+                    state.currencySymbol = currency.symbol;
+                    updateDashboard();
+                    saveToLocalStorage();
+                });
+                
+                container.appendChild(option);
+            });
+        }
+
+        function applyThemeColor(color) {
+            state.primaryColor = color;
+            document.documentElement.style.setProperty('--primary-color', color);
+            
+            const hex = color.replace('#', '');
+            const r = parseInt(hex.substr(0, 2), 16);
+            const g = parseInt(hex.substr(2, 2), 16);
+            const b = parseInt(hex.substr(4, 2), 16);
+            
+            const hoverR = Math.max(0, r - 20);
+            const hoverG = Math.max(0, g - 20);
+            const hoverB = Math.max(0, b - 20);
+            const hoverColor = `#${hoverR.toString(16).padStart(2, '0')}${hoverG.toString(16).padStart(2, '0')}${hoverB.toString(16).padStart(2, '0')}`;
+            
+            document.documentElement.style.setProperty('--primary-hover', hoverColor);
+            
+            document.querySelectorAll('.theme-color').forEach(c => c.classList.remove('active'));
+            document.querySelector(`.theme-color[data-color="${color}"]`).classList.add('active');
+        }
+
+        function applyDarkMode(isDark) {
+            document.body.setAttribute('data-theme', isDark ? 'dark' : 'light');
+        }
+
+        function openMenu() {
+            document.getElementById('menuOverlay').classList.add('active');
+            document.getElementById('menuSidebar').classList.add('active');
+            updateHistoryList();
+        }
+
+        function closeMenu() {
+            document.getElementById('menuOverlay').classList.remove('active');
+            document.getElementById('menuSidebar').classList.remove('active');
+        }
+
+        function saveToLocalStorage() {
+            try {
+                localStorage.setItem('budgetFlow', JSON.stringify(state));
+            } catch (e) {
+                console.error('Failed to save to localStorage:', e);
+            }
+        }
+
+        function loadFromLocalStorage() {
+            try {
+                const saved = localStorage.getItem('budgetFlow');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    Object.assign(state, parsed);
+                }
+            } catch (e) {
+                console.error('Failed to load from localStorage:', e);
+            }
+        }
+
+        function initializeAllModules() {
+            initCalculator();
+            initNotes();
+            initExpenses();
+        }
+    </script>
+</body>
+</html>
